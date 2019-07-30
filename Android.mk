@@ -1,0 +1,14 @@
+
+LOCAL_PATH := $(call my-dir)
+
+include $(CLEAR_VARS)
+
+LOCAL_MODULE := i2c_raw
+LOCAL_MODULE_PATH := $(TARGET_OUT_OPTIONAL_EXECUTABLES)
+LOCAL_MODULE_TAGS := optional
+
+LOCAL_SRC_FILES := main.c
+
+LOCAL_CFLAGS +=  -fPIC -DANDROID -fsigned-char
+
+include $(BUILD_EXECUTABLE)
