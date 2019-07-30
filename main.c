@@ -51,7 +51,7 @@ static int i2c_open(int dev, int addr)
 	ret = ioctl(fd, I2C_SLAVE_FORCE, addr);
 	if (ret < 0)
     {
-		fprintf(stderr, "I2C ioctl(slave) error %d\n", errno);
+		fprintf(stderr, "I2C ioctl(I2C_SLAVE_FORCE) error %d\n", errno);
 		close(fd);
 		return -1;
 	}
@@ -64,14 +64,14 @@ int main(int argc, char* argv[])
 {
     char *end;
     int i;
-    unsigned char block[256];
-    if(argc < 4 || argc >= 4 + sizeof(block) ||
+    unsigned char block[1024];
+    if(argc < 4 || argc - 4 > sizeof(block) ||
      (argv[1][0] != 'r' && argv[1][0] != 'w'))
     {
         fprintf(stderr, "Usage:\n");
-        fprintf(stderr, "   i2c_raw r/w BUS DEV READ_SIZE/DATA\n\n");
+        fprintf(stderr, "   i2c_raw w/r BUS DEV DATA/READ_SIZE\n\n");
         fprintf(stderr, "   Write 4 bytes i2c bus 3, device 0x55\n");
-        fprintf(stderr, "       i2c_raw w 3 0x55 0x01 0x02 0x03 0x04\n");
+        fprintf(stderr, "       i2c_raw w 3 0x55 0xAA 0xAA 0xAA 0xAA\n");
         fprintf(stderr, "   Read 2 bytes i2c bus 3, device 0x55 register 0x66 (depends on device protocol)\n");
         fprintf(stderr, "       i2c_raw w 3 0x55 0x66\n");
         fprintf(stderr, "       i2c_raw r 3 0x55 2\n");
@@ -93,21 +93,23 @@ int main(int argc, char* argv[])
         if(argc > 4)
         {
             nbyte = strtol(argv[4], &end, 0);
-            if (*end || nbyte < 0 || nbyte > 0xff)
+            if (nbyte < 0 || nbyte > sizeof(block))
             {
-                nbyte = 1;
+                fprintf(stderr, "Cannot read more than %dbytes\n", sizeof(block));
+                close(fd);
+                return -1;
             }
         }
 
         int ret = read(fd, block, nbyte);
         if (ret != nbyte)
         {
-            fprintf(stderr, "read (ret != nbyte) ret=%d, nbytes=%d\n", ret, nbyte);
+            fprintf(stderr, "read ret=%d nbytes=%d\n", ret, nbyte);
         }
 
         for(i = 0; i < ret; ++i)
         {
-            printf("0x%02x", block[i]);
+            printf("0x%02x ", block[i]);
         }
         printf("\n");
     }
@@ -128,11 +130,10 @@ int main(int argc, char* argv[])
         int ret = write(fd, block, nbyte);
         if (ret != nbyte)
         {
-            fprintf(stderr, "write (ret != nbyte) ret=%d, nbytes=%d\n", ret, nbyte);
+            fprintf(stderr, "write ret=%d nbytes=%d\n", ret, nbyte);
         }
     }
 
 	close(fd);
-
 	return 0;
 }
